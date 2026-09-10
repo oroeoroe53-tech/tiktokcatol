@@ -1,0 +1,879 @@
+// Faro — esquema de base de datos (PostgreSQL + Prisma)
+// Los enums deben mantenerse en sincronía con packages/types/src/enums.ts
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  CREATOR
+  PRIEST_VERIFIED
+  ORG_VERIFIED
+  MODERATOR
+  EDITOR
+  SUPPORT
+  ANALYST
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  DELETED
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  APPLE
+}
+
+enum DeviceType {
+  IOS
+  ANDROID
+  WEB
+}
+
+enum VideoStatus {
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum VideoVisibility {
+  PUBLIC
+  FOLLOWERS
+  PRIVATE
+  DRAFT
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+enum ContentCategory {
+  PRAYER
+  BIBLE
+  SAINTS
+  JESUS
+  FORMATION
+  TESTIMONY
+  SACRAMENTS
+  YOUTH
+  FAMILY
+  MUSIC
+  CHURCH_HISTORY
+  OTHER
+}
+
+enum ReportTargetType {
+  VIDEO
+  COMMENT
+  USER
+  PRAYER_INTENTION
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  HATE_SPEECH
+  THREATS
+  SEXUAL_CONTENT
+  ILLEGAL_CONTENT
+  MISINFORMATION
+  IMPERSONATION
+  DANGEROUS_CONTENT
+  COPYRIGHT
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum VerificationType {
+  PRIEST
+  RELIGIOUS
+  CATECHIST
+  PARISH
+  DIOCESE
+  ORGANIZATION
+  CREATOR
+}
+
+enum VerificationStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  PRAYER_REMINDER
+  SAINT_OF_THE_DAY
+  CHALLENGE_PROGRESS
+  GOSPEL_OF_THE_DAY
+  NEW_FOLLOWER
+  CREATOR_NEW_VIDEO
+  COMMENT_REPLY
+  VIDEO_LIKED
+  MODERATION_UPDATE
+  SYSTEM
+}
+
+enum NotificationFrequency {
+  DAILY
+  FEW_TIMES_WEEK
+  WEEKLY
+  NEVER
+}
+
+enum FaithPathObjective {
+  GET_CLOSER_TO_JESUS
+  START_PRAYING
+  KNOW_THE_BIBLE
+  KNOW_THE_SAINTS
+  LEARN_CATHOLICISM
+  RETURN_TO_CHURCH
+  IMPROVE_SPIRITUAL_LIFE
+  FIND_COMMUNITY
+  LIVE_FAITH_AS_FAMILY
+}
+
+enum PrayerCategoryKey {
+  MORNING
+  NIGHT
+  ROSARY
+  BEFORE_SLEEP
+  GRATITUDE
+  FORGIVENESS
+  FAMILY
+  SICKNESS
+  DIFFICULT_TIMES
+  THANKSGIVING
+}
+
+enum Testament {
+  OLD
+  NEW
+}
+
+enum VerificationTokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+enum ConsentType {
+  TERMS_OF_USE
+  PRIVACY_POLICY
+  AGE_CONFIRMATION
+  MARKETING_NOTIFICATIONS
+}
+
+enum AdminAuditAction {
+  USER_SUSPENDED
+  USER_BANNED
+  USER_REINSTATED
+  VIDEO_REMOVED
+  VIDEO_RESTORED
+  REPORT_RESOLVED
+  CREATOR_VERIFIED
+  CREATOR_REJECTED
+  CHALLENGE_CREATED
+  CATEGORY_UPDATED
+  CONTENT_FEATURED
+  NOTIFICATION_BROADCAST
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// USUARIOS, SESIONES Y DISPOSITIVOS
+// ─────────────────────────────────────────────────────────────────────────
+
+model User {
+  id                String     @id @default(cuid())
+  email             String     @unique
+  emailVerifiedAt   DateTime?
+  passwordHash      String? // null cuando el usuario solo usa OAuth
+  username          String     @unique
+  displayName       String
+  avatarUrl         String?
+  bio               String?    @db.VarChar(300)
+  dateOfBirth       DateTime
+  role              UserRole   @default(USER)
+  status            UserStatus @default(ACTIVE)
+  authProvider      AuthProvider @default(EMAIL)
+  googleId          String?    @unique
+  appleId           String?    @unique
+
+  preferences       UserPreferences?
+  sessions          Session[]
+  devices           Device[]
+  videos            Video[]
+  likes             Like[]
+  saves             Save[]
+  comments          Comment[]
+  videoViews        VideoView[]
+
+  following         Follow[]   @relation("FollowerRelation")
+  followers         Follow[]   @relation("FollowingRelation")
+
+  blocksInitiated   Block[]    @relation("BlockingUser")
+  blockedBy         Block[]    @relation("BlockedUser")
+  mutesInitiated    Mute[]     @relation("MutingUser")
+  mutedBy           Mute[]     @relation("MutedUser")
+
+  reportsFiled      Report[]   @relation("ReportsFiled")
+  reportsModerated  Report[]   @relation("ReportsModerated")
+
+  prayerFavorites   PrayerFavorite[]
+  prayerSessions    PrayerSessionLog[]
+  prayerIntentions  PrayerIntention[]
+  intentionSupports PrayerIntentionSupport[]
+
+  bibleFavorites    BibleFavoriteVerse[]
+
+  challengeProgress ChallengeProgress[]
+  faithPathProgress FaithPathProgress[]
+  stepCompletions   FaithPathStepCompletion[]
+
+  notifications     Notification[]
+  creatorVerification CreatorVerification[]
+  consents          Consent[]
+  adminAuditLogs    AdminAuditLog[]
+  analyticsEvents   AnalyticsEvent[]
+
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  lastActiveAt      DateTime   @default(now())
+
+  @@index([status])
+  @@index([role])
+  @@index([createdAt])
+}
+
+model UserPreferences {
+  id                     String                 @id @default(cuid())
+  userId                 String                 @unique
+  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interests              String[]               @default([])
+  language               String                 @default("es")
+  country                String?
+  faithPathObjective     FaithPathObjective?
+  notificationFrequency  NotificationFrequency  @default(FEW_TIMES_WEEK)
+  notificationHour       Int                    @default(9)
+  pushNotificationsEnabled Boolean              @default(true)
+  onboardingCompleted    Boolean                @default(false)
+  updatedAt              DateTime               @updatedAt
+}
+
+model Session {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId         String?
+  device           Device?  @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  refreshTokenHash String   @unique
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Device {
+  id             String     @id @default(cuid())
+  userId         String
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           DeviceType
+  pushToken      String?
+  name           String?
+  lastSeenAt     DateTime   @default(now())
+  createdAt      DateTime   @default(now())
+  sessions       Session[]
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  id        String                @id @default(cuid())
+  userId    String
+  type      VerificationTokenType
+  tokenHash String                @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime              @default(now())
+
+  @@index([userId, type])
+}
+
+model Consent {
+  id         String      @id @default(cuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       ConsentType
+  version    String
+  acceptedAt DateTime    @default(now())
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// COMUNIDAD: SEGUIR / BLOQUEAR / SILENCIAR
+// ─────────────────────────────────────────────────────────────────────────
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("FollowerRelation", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("FollowingRelation", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+model Block {
+  id           String   @id @default(cuid())
+  blockingId   String
+  blockingUser User     @relation("BlockingUser", fields: [blockingId], references: [id], onDelete: Cascade)
+  blockedId    String
+  blockedUser  User     @relation("BlockedUser", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@unique([blockingId, blockedId])
+}
+
+model Mute {
+  id         String   @id @default(cuid())
+  mutingId   String
+  mutingUser User     @relation("MutingUser", fields: [mutingId], references: [id], onDelete: Cascade)
+  mutedId    String
+  mutedUser  User     @relation("MutedUser", fields: [mutedId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([mutingId, mutedId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// VÍDEOS Y FEED
+// ─────────────────────────────────────────────────────────────────────────
+
+model Category {
+  id       String          @id @default(cuid())
+  key      ContentCategory @unique
+  labelEs  String
+  labelEn  String
+  icon     String?
+  order    Int             @default(0)
+  active   Boolean         @default(true)
+}
+
+model Hashtag {
+  id        String        @id @default(cuid())
+  tag       String        @unique
+  useCount  Int           @default(0)
+  videos    VideoHashtag[]
+  createdAt DateTime      @default(now())
+
+  @@index([useCount])
+}
+
+model VideoHashtag {
+  videoId   String
+  video     Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  hashtagId String
+  hashtag   Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, hashtagId])
+}
+
+model Video {
+  id               String            @id @default(cuid())
+  creatorId        String
+  creator          User              @relation(fields: [creatorId], references: [id])
+  title            String
+  description      String?           @db.VarChar(500)
+  storageKey       String // clave del archivo original en el object storage
+  videoUrl         String? // URL pública final (tras transcodificación)
+  thumbnailUrl     String?
+  duration         Int // segundos
+  category         ContentCategory
+  language         String            @default("es")
+  status           VideoStatus       @default(UPLOADING)
+  visibility       VideoVisibility   @default(DRAFT)
+  moderationStatus ModerationStatus  @default(PENDING)
+  isDemoContent    Boolean           @default(false)
+
+  likeCount        Int               @default(0)
+  commentCount     Int               @default(0)
+  saveCount        Int               @default(0)
+  shareCount       Int               @default(0)
+  viewCount        Int               @default(0)
+  completedViewCount Int             @default(0)
+  totalWatchTimeSeconds BigInt       @default(0)
+
+  hashtags         VideoHashtag[]
+  likes            Like[]
+  saves            Save[]
+  comments         Comment[]
+  views            VideoView[]
+  dailyStats       VideoDailyStats[]
+  challengeDays    ChallengeDay[]
+  faithPathSteps   FaithPathStep[]
+  reports          Report[]
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  publishedAt      DateTime?
+
+  @@index([creatorId])
+  @@index([status, visibility, moderationStatus])
+  @@index([category])
+  @@index([publishedAt])
+}
+
+// Eventos crudos de visualización. Se purgan periódicamente (ver worker de agregación);
+// solo se conservan un número limitado de días, el resto vive agregado en VideoDailyStats.
+model VideoView {
+  id                String   @id @default(cuid())
+  videoId           String
+  video             Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId            String?
+  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  watchTimeSeconds  Int
+  completed         Boolean  @default(false)
+  rewatch           Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  @@index([videoId, createdAt])
+  @@index([userId, createdAt])
+}
+
+// Agregado diario por vídeo (estrategia de retención: agregar y purgar eventos crudos antiguos)
+model VideoDailyStats {
+  id           String   @id @default(cuid())
+  videoId      String
+  video        Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  date         DateTime @db.Date
+  views        Int      @default(0)
+  completions  Int      @default(0)
+  watchTimeSeconds BigInt @default(0)
+  likes        Int      @default(0)
+  shares       Int      @default(0)
+  saves        Int      @default(0)
+
+  @@unique([videoId, date])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@index([videoId])
+}
+
+model Save {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@index([videoId])
+}
+
+model Comment {
+  id        String            @id @default(cuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId   String
+  video     Video             @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[]         @relation("CommentReplies")
+  text      String            @db.VarChar(500)
+  status    ModerationStatus  @default(APPROVED)
+  reports   Report[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([videoId])
+  @@index([parentId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// ORACIÓN
+// ─────────────────────────────────────────────────────────────────────────
+
+model Prayer {
+  id              String             @id @default(cuid())
+  title           String
+  content         String             @db.Text
+  category        PrayerCategoryKey
+  durationSeconds Int                @default(120)
+  language        String             @default("es")
+  audioUrl        String?
+  isDemoContent   Boolean            @default(false)
+  favorites       PrayerFavorite[]
+  sessions        PrayerSessionLog[]
+  saints          Saint[]
+  challengeDays   ChallengeDay[]
+  faithPathSteps  FaithPathStep[]
+  createdAt       DateTime           @default(now())
+
+  @@index([category, language])
+}
+
+model PrayerFavorite {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prayerId  String
+  prayer    Prayer   @relation(fields: [prayerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, prayerId])
+}
+
+model PrayerSessionLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prayerId    String
+  prayer      Prayer   @relation(fields: [prayerId], references: [id], onDelete: Cascade)
+  completedAt DateTime @default(now())
+
+  @@index([userId, completedAt])
+}
+
+model PrayerIntention {
+  id            String                     @id @default(cuid())
+  authorId      String
+  author        User                       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  text          String                     @db.VarChar(500)
+  isAnonymous   Boolean                    @default(false)
+  moderationStatus ModerationStatus        @default(APPROVED)
+  supports      PrayerIntentionSupport[]
+  reports       Report[]
+  createdAt     DateTime                   @default(now())
+
+  @@index([createdAt])
+}
+
+model PrayerIntentionSupport {
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  intentionId  String
+  intention    PrayerIntention @relation(fields: [intentionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime        @default(now())
+
+  @@id([userId, intentionId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// SANTOS
+// ─────────────────────────────────────────────────────────────────────────
+
+model Saint {
+  id              String   @id @default(cuid())
+  name            String
+  imageUrl        String?
+  feastMonth      Int // 1-12, independiente del año
+  feastDay        Int // 1-31
+  shortBio        String   @db.VarChar(280)
+  biography       String   @db.Text
+  virtues         String[] @default([])
+  relatedPrayerId String?
+  relatedPrayer   Prayer?  @relation(fields: [relatedPrayerId], references: [id])
+  language        String   @default("es")
+  isDemoContent   Boolean  @default(false)
+  faithPathSteps  FaithPathStep[]
+  createdAt       DateTime @default(now())
+
+  @@index([feastMonth, feastDay])
+  @@index([language])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// BIBLIA
+// ─────────────────────────────────────────────────────────────────────────
+
+model BibleBook {
+  id        String         @id @default(cuid())
+  name      String
+  testament Testament
+  order     Int
+  language  String         @default("es")
+  chapters  BibleChapter[]
+
+  @@unique([language, order])
+  @@index([testament])
+}
+
+model BibleChapter {
+  id            String        @id @default(cuid())
+  bookId        String
+  book          BibleBook     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapterNumber Int
+  verses        BibleVerse[]
+
+  @@unique([bookId, chapterNumber])
+}
+
+model BibleVerse {
+  id           String               @id @default(cuid())
+  chapterId    String
+  chapter      BibleChapter         @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  verseNumber  Int
+  text         String               @db.Text
+  translation  String // p.ej. "Douay-Rheims" (demo) — sustituir por traducción licenciada en producción
+  favorites    BibleFavoriteVerse[]
+  faithPathSteps FaithPathStep[]
+
+  @@unique([chapterId, verseNumber])
+}
+
+model BibleFavoriteVerse {
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verseId   String
+  verse     BibleVerse @relation(fields: [verseId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  @@id([userId, verseId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// RETOS
+// ─────────────────────────────────────────────────────────────────────────
+
+model Challenge {
+  id            String              @id @default(cuid())
+  title         String
+  description   String              @db.VarChar(500)
+  imageUrl      String?
+  category      ContentCategory
+  durationDays  Int
+  active        Boolean             @default(true)
+  isDemoContent Boolean             @default(false)
+  days          ChallengeDay[]
+  progress      ChallengeProgress[]
+  createdAt     DateTime            @default(now())
+
+  @@index([active])
+}
+
+model ChallengeDay {
+  id          String    @id @default(cuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  dayNumber   Int
+  title       String
+  description String    @db.VarChar(500)
+  videoId     String?
+  video       Video?    @relation(fields: [videoId], references: [id])
+  prayerId    String?
+  prayer      Prayer?   @relation(fields: [prayerId], references: [id])
+
+  @@unique([challengeId, dayNumber])
+}
+
+model ChallengeProgress {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challengeId String
+  challenge   Challenge  @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  currentDay  Int        @default(1)
+  streak      Int        @default(0)
+  completed   Boolean    @default(false)
+  startedAt   DateTime   @default(now())
+  completedAt DateTime?
+  lastActivityAt DateTime @default(now())
+
+  @@unique([userId, challengeId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CAMINO DE FE
+// Plantilla reutilizable (FaithPathTemplate + FaithPathStep) + progreso por usuario.
+// Se normaliza así (en vez de una fila "FaithPath" por usuario con contenido embebido)
+// para poder editar el itinerario una vez desde el admin y que todos los usuarios con
+// el mismo objetivo compartan la misma plantilla versionable.
+// ─────────────────────────────────────────────────────────────────────────
+
+model FaithPathTemplate {
+  id          String               @id @default(cuid())
+  objective   FaithPathObjective   @unique
+  title       String
+  description String               @db.VarChar(500)
+  steps       FaithPathStep[]
+  progress    FaithPathProgress[]
+  createdAt   DateTime             @default(now())
+}
+
+model FaithPathStep {
+  id          String            @id @default(cuid())
+  templateId  String
+  template    FaithPathTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  order       Int
+  title       String
+  description String            @db.VarChar(500)
+  videoId     String?
+  video       Video?            @relation(fields: [videoId], references: [id])
+  prayerId    String?
+  prayer      Prayer?           @relation(fields: [prayerId], references: [id])
+  bibleVerseId String?
+  bibleVerse  BibleVerse?       @relation(fields: [bibleVerseId], references: [id])
+  saintId     String?
+  saint       Saint?            @relation(fields: [saintId], references: [id])
+  completions FaithPathStepCompletion[]
+
+  @@unique([templateId, order])
+}
+
+model FaithPathProgress {
+  id               String             @id @default(cuid())
+  userId           String
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateId       String
+  template         FaithPathTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  currentStepOrder Int                @default(1)
+  startedAt        DateTime           @default(now())
+  completedAt      DateTime?
+
+  @@unique([userId, templateId])
+}
+
+model FaithPathStepCompletion {
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stepId      String
+  step        FaithPathStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  completedAt DateTime      @default(now())
+
+  @@id([userId, stepId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// REPORTES / MODERACIÓN / VERIFICACIÓN
+// ─────────────────────────────────────────────────────────────────────────
+
+model Report {
+  id            String           @id @default(cuid())
+  reporterId    String
+  reporter      User             @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType    ReportTargetType
+  targetVideoId String?
+  targetVideo   Video?           @relation(fields: [targetVideoId], references: [id], onDelete: Cascade)
+  targetCommentId String?
+  targetComment Comment?         @relation(fields: [targetCommentId], references: [id], onDelete: Cascade)
+  targetUserId  String?
+  targetIntentionId String?
+  targetIntention PrayerIntention? @relation(fields: [targetIntentionId], references: [id], onDelete: Cascade)
+  reason        ReportReason
+  description   String?          @db.VarChar(1000)
+  status        ReportStatus     @default(OPEN)
+  moderatorId   String?
+  moderator     User?            @relation("ReportsModerated", fields: [moderatorId], references: [id])
+  resolution    String?          @db.VarChar(1000)
+  createdAt     DateTime         @default(now())
+  resolvedAt    DateTime?
+
+  @@index([status])
+  @@index([targetType])
+}
+
+model CreatorVerification {
+  id                String              @id @default(cuid())
+  userId            String
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              VerificationType
+  legalName         String
+  organization      String?
+  documentUrl       String?
+  notes             String?             @db.VarChar(1000)
+  status            VerificationStatus  @default(PENDING)
+  reviewerId        String?
+  reviewNotes       String?             @db.VarChar(1000)
+  submittedAt       DateTime            @default(now())
+  reviewedAt        DateTime?
+
+  @@index([status])
+  @@index([userId])
+}
+
+model AdminAuditLog {
+  id         String            @id @default(cuid())
+  adminId    String
+  admin      User              @relation(fields: [adminId], references: [id])
+  action     AdminAuditAction
+  targetType String
+  targetId   String
+  metadata   Json?
+  createdAt  DateTime          @default(now())
+
+  @@index([adminId])
+  @@index([targetType, targetId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// NOTIFICACIONES
+// ─────────────────────────────────────────────────────────────────────────
+
+// Eventos de producto genéricos (app_opened, video_started, search, etc.).
+// Se purgan periódicamente más allá de la ventana de retención (ver AnalyticsRetentionTask);
+// las métricas agregadas (DAU/WAU/MAU, funnels) se recalculan antes de purgar el detalle.
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name       String
+  properties Json?
+  createdAt  DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+  @@index([createdAt])
+}

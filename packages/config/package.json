@@ -1,0 +1,6 @@
+{
+  "name": "@faro/config",
+  "version": "0.1.0",
+  "private": true,
+  "files": ["base.tsconfig.json"]
+}

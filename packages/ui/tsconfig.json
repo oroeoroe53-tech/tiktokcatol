@@ -1,0 +1,12 @@
+{
+  "extends": "../config/base.tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "jsx": "react-native",
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["src"]
+}

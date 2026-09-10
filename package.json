@@ -1,0 +1,28 @@
+{
+  "name": "faro",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Faro — red social católica de vídeo corto, oración, Biblia, formación y comunidad.",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @faro/api start:dev",
+    "dev:mobile": "pnpm --filter @faro/mobile start",
+    "dev:admin": "pnpm --filter @faro/admin dev",
+    "build": "pnpm -r --filter=./apps/* --filter=./packages/* build",
+    "lint": "pnpm -r --filter=./apps/* --filter=./packages/* lint",
+    "typecheck": "pnpm -r --filter=./apps/* --filter=./packages/* typecheck",
+    "test": "pnpm -r --filter=./apps/* --filter=./packages/* test",
+    "prisma:generate": "pnpm --filter @faro/api prisma:generate",
+    "prisma:migrate": "pnpm --filter @faro/api prisma:migrate",
+    "prisma:seed": "pnpm --filter @faro/api prisma:seed",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4"
+  }
+}

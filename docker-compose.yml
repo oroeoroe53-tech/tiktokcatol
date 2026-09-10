@@ -1,0 +1,55 @@
+name: faro
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: faro
+      POSTGRES_PASSWORD: faro_dev_password
+      POSTGRES_DB: faro
+    ports:
+      - '5432:5432'
+    volumes:
+      - faro_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U faro']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - faro_redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: faro_dev
+      MINIO_ROOT_PASSWORD: faro_dev_secret
+    ports:
+      - '9000:9000' # API S3-compatible
+      - '9001:9001' # Consola web
+    volumes:
+      - faro_minio_data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  faro_postgres_data:
+  faro_redis_data:
+  faro_minio_data:

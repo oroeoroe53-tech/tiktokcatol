@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.next/
+.expo/
+.expo-shared/
+web-build/
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Prisma
+apps/api/prisma/dev.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Testing
+coverage/
+
+# Dev mail outbox (local SMTP fallback)
+apps/api/storage/dev-outbox/
+apps/api/storage/uploads/
+
+# Turbo / misc caches
+.turbo/
+*.tsbuildinfo

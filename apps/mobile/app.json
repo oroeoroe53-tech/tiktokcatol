@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Faro",
+    "slug": "faro",
+    "scheme": "faro",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#14132B"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.faro.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Faro necesita acceso a la cámara para grabar vídeos.",
+        "NSMicrophoneUsageDescription": "Faro necesita acceso al micrófono para grabar vídeos con sonido.",
+        "NSPhotoLibraryUsageDescription": "Faro necesita acceso a tus fotos para seleccionar un vídeo o portada."
+      }
+    },
+    "android": {
+      "package": "com.faro.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#14132B"
+      },
+      "permissions": ["CAMERA", "RECORD_AUDIO", "READ_MEDIA_VIDEO", "READ_MEDIA_IMAGES"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Faro necesita acceso a tus fotos para seleccionar un vídeo o portada."
+        }
+      ]
+    ],
+    "extra": {
+      "apiUrl": "http://localhost:3000/api/v1"
+    }
+  }
+}
