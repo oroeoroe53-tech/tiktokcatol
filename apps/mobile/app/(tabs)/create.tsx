@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { Video, ResizeMode } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useRouter } from 'expo-router';
 import { ContentCategory, VideoVisibility } from '@faro/types';
 import { MAX_VIDEO_DURATION_SECONDS } from '@faro/validation';
@@ -35,6 +35,11 @@ export default function CreateScreen() {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'pick' | 'details' | 'done'>('pick');
 
+  const previewPlayer = useVideoPlayer(asset?.uri ?? null, (p) => {
+    p.loop = true;
+    p.play();
+  });
+
   const createUploadUrl = useCreateUploadUrl();
   const publishVideo = usePublishVideo();
 
@@ -58,7 +63,7 @@ export default function CreateScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      mediaTypes: ['videos'],
       videoMaxDuration: MAX_VIDEO_DURATION_SECONDS,
       quality: 0.8,
     });
@@ -127,7 +132,7 @@ export default function CreateScreen() {
 
         {step === 'details' && asset && (
           <>
-            <Video source={{ uri: asset.uri }} style={styles.preview} resizeMode={ResizeMode.COVER} useNativeControls isLooping />
+            <VideoView player={previewPlayer} style={styles.preview} contentFit="cover" nativeControls />
             <TextInput style={styles.input} placeholder="Título" value={title} onChangeText={setTitle} maxLength={120} />
             <TextInput
               style={[styles.input, styles.textArea]}

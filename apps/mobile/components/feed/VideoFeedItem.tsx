@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
-import { ResizeMode, Video } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -22,7 +22,6 @@ interface VideoFeedItemProps {
 export function VideoFeedItem({ video, isActive, onCommentPress, onNotInterested }: VideoFeedItemProps) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const videoRef = useRef<Video>(null);
   const [paused, setPaused] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
 
@@ -30,14 +29,17 @@ export function VideoFeedItem({ video, isActive, onCommentPress, onNotInterested
   const saveMutation = useSaveVideo();
   const followMutation = useFollowCreator();
 
+  const player = useVideoPlayer(video.videoUrl, (p) => {
+    p.loop = true;
+  });
+
   React.useEffect(() => {
-    if (!videoRef.current) return;
     if (isActive && !paused) {
-      videoRef.current.playAsync().catch(() => undefined);
+      player.play();
     } else {
-      videoRef.current.pauseAsync().catch(() => undefined);
+      player.pause();
     }
-  }, [isActive, paused]);
+  }, [isActive, paused, player]);
 
   const requireAuth = (action: () => void) => {
     if (!user) {
@@ -50,13 +52,11 @@ export function VideoFeedItem({ video, isActive, onCommentPress, onNotInterested
   return (
     <View style={styles.container}>
       <Pressable style={StyleSheet.absoluteFill} onPress={() => setPaused((p) => !p)}>
-        <Video
-          ref={videoRef}
-          source={{ uri: video.videoUrl }}
+        <VideoView
+          player={player}
           style={StyleSheet.absoluteFill}
-          resizeMode={ResizeMode.COVER}
-          isLooping
-          shouldPlay={isActive && !paused}
+          contentFit="cover"
+          nativeControls={false}
         />
       </Pressable>
 
@@ -154,13 +154,13 @@ const styles = StyleSheet.create({
   container: { height: SCREEN_HEIGHT, width: '100%', backgroundColor: colors.ink },
   bottomGradient: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 260 },
   processingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(20,19,43,0.5)',
   },
   processingText: { color: colors.white, fontFamily: fontFamily.bodyMedium },
-  pauseOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  pauseOverlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   infoColumn: { position: 'absolute', left: spacing.lg, right: 90, bottom: 110, gap: spacing.xs },
   creatorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
   creatorName: { color: colors.white, fontFamily: fontFamily.bodyBold, fontSize: fontSize.base },
