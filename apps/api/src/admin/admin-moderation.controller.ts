@@ -32,6 +32,11 @@ export class AdminModerationController {
     return this.moderationService.listFlaggedContent();
   }
 
+  @Get('pending-videos')
+  listPendingVideos() {
+    return this.moderationService.listPendingVideos();
+  }
+
   @Patch('reports/:id/resolve')
   resolveReport(
     @CurrentUser() admin: AuthenticatedUser,

@@ -58,6 +58,15 @@ export class AdminModerationService {
     await this.auditLog.record(adminId, AdminAuditAction.VIDEO_RESTORED, 'Video', videoId);
   }
 
+  async listPendingVideos(limit = 30) {
+    return this.prisma.video.findMany({
+      where: { moderationStatus: ModerationStatus.PENDING },
+      include: { creator: true },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
+
   async listFlaggedContent() {
     const [videos, comments, intentions] = await Promise.all([
       this.prisma.video.findMany({ where: { moderationStatus: ModerationStatus.FLAGGED }, include: { creator: true } }),
