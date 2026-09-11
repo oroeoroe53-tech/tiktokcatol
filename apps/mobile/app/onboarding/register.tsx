@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Ionicons } from '@expo/vector-icons';
 import { registerSchema, type RegisterInput } from '@faro/validation';
 import { Button, colors, fontFamily, fontSize, radius, spacing } from '@faro/ui';
 import { OnboardingScreen } from '../../components/onboarding/OnboardingScreen';
@@ -44,7 +45,14 @@ export default function RegisterScreen() {
       reset();
       router.replace('/(tabs)');
     } catch (error) {
-      setServerError(error instanceof ApiError ? error.message : 'No se pudo crear la cuenta. Inténtalo de nuevo.');
+      if (error instanceof ApiError) {
+        const fieldErrors = (error.details as { errors?: { path: string; message: string }[] })?.errors;
+        const detail = fieldErrors?.map((e) => `${e.path}: ${e.message}`).join(' · ');
+        setServerError(detail ? `${error.message} (${detail})` : error.message);
+      } else {
+        const message = error instanceof Error ? error.message : String(error);
+        setServerError(`No se pudo crear la cuenta: ${message}`);
+      }
     }
   };
 
@@ -76,13 +84,7 @@ export default function RegisterScreen() {
           autoCapitalize="none"
           error={errors.email?.message}
         />
-        <Field
-          name="password"
-          control={control}
-          placeholder="Contraseña"
-          secureTextEntry
-          error={errors.password?.message}
-        />
+        <PasswordField name="password" control={control} error={errors.password?.message} />
         <Field
           name="dateOfBirth"
           control={control}
@@ -127,7 +129,49 @@ function Field({
   );
 }
 
+function PasswordField({
+  name,
+  control,
+  error,
+}: {
+  name: 'password';
+  control: any;
+  error?: string;
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field: { onChange, onBlur, value } }) => (
+        <View>
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={[styles.input, styles.passwordInput, error && styles.inputError]}
+              placeholder="Contraseña"
+              placeholderTextColor="rgba(255,255,255,0.4)"
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry={!visible}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={typeof value === 'string' ? value : ''}
+            />
+            <Pressable style={styles.eyeButton} onPress={() => setVisible((v) => !v)}>
+              <Ionicons name={visible ? 'eye-off' : 'eye'} size={20} color="rgba(255,255,255,0.7)" />
+            </Pressable>
+          </View>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        </View>
+      )}
+    />
+  );
+}
+
 const styles = StyleSheet.create({
+  passwordRow: { position: 'relative', justifyContent: 'center' },
+  passwordInput: { paddingRight: 48 },
+  eyeButton: { position: 'absolute', right: spacing.md, padding: spacing.xs },
   input: {
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.2)',
