@@ -4,19 +4,12 @@ import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-// Vídeos de muestra Creative Commons (Blender Foundation / Google GTV sample bucket) usados
-// ÚNICAMENTE como placeholders reproducibles para el feed de demostración — no son contenido
-// católico real. Todos los vídeos creados con estas URLs se marcan `isDemoContent: true`.
-const SAMPLE_VIDEO_URLS = [
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-];
+// Vídeo de muestra Creative Commons (Blender Foundation, "Big Buck Bunny") usado ÚNICAMENTE
+// como placeholder reproducible para el feed de demostración — no es contenido católico real.
+// Todos los vídeos creados con esta URL se marcan `isDemoContent: true`.
+// Nota: el bucket público de Google antes usado (gtv-videos-bucket) dejó de ser accesible
+// (403 Access Denied); se sustituye por una URL estable verificada.
+const SAMPLE_VIDEO_URLS = ['https://www.w3schools.com/html/mov_bbb.mp4'];
 
 const CATEGORY_LABELS: Record<string, { es: string; en: string; icon: string }> = {
   PRAYER: { es: 'Oración', en: 'Prayer', icon: 'flame' },
