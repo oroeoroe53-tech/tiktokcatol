@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
+import { secureStorage } from '../utils/secure-storage';
 import type { UserSummary } from '@faro/types';
 import { API_URL } from '../services/api-config';
 
@@ -26,8 +26,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   hydrate: async () => {
     const [accessToken, refreshToken] = await Promise.all([
-      SecureStore.getItemAsync(ACCESS_TOKEN_KEY),
-      SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
+      secureStorage.getItemAsync(ACCESS_TOKEN_KEY),
+      secureStorage.getItemAsync(REFRESH_TOKEN_KEY),
     ]);
     set({ accessToken, refreshToken, hasHydrated: true });
     if (accessToken) {
@@ -47,8 +47,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setSession: async (user, accessToken, refreshToken) => {
     await Promise.all([
-      SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken),
-      SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken),
+      secureStorage.setItemAsync(ACCESS_TOKEN_KEY, accessToken),
+      secureStorage.setItemAsync(REFRESH_TOKEN_KEY, refreshToken),
     ]);
     set({ user, accessToken, refreshToken });
   },
@@ -67,8 +67,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!res.ok) return false;
       const data = (await res.json()) as { accessToken: string; refreshToken: string };
       await Promise.all([
-        SecureStore.setItemAsync(ACCESS_TOKEN_KEY, data.accessToken),
-        SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken),
+        secureStorage.setItemAsync(ACCESS_TOKEN_KEY, data.accessToken),
+        secureStorage.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken),
       ]);
       set({ accessToken: data.accessToken, refreshToken: data.refreshToken });
       return true;
@@ -79,8 +79,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     await Promise.all([
-      SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
-      SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
+      secureStorage.deleteItemAsync(ACCESS_TOKEN_KEY),
+      secureStorage.deleteItemAsync(REFRESH_TOKEN_KEY),
     ]);
     set({ user: null, accessToken: null, refreshToken: null });
   },
